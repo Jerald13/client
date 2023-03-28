@@ -1,80 +1,76 @@
-import React, { useState, useRef } from "react"
-import SignatureCanvas from "react-signature-canvas"
+import React, { useState, useEffect } from "react"
+import Web3 from "web3"
 
-function SubscriptionForm({ onSubmit, buyProduct }) {
-  const [contractAddress, setContractAddress] = useState("")
-  const [productId, setProductId] = useState("")
-  const [amount, setAmount] = useState("")
-  const signatureCanvasRef = useRef(null)
+function SubscriptionForm({ alchemyKey }) {
+    const [contractAddress, setContractAddress] = useState("")
+    const [eventSignature, setEventSignature] = useState("")
+    const [subscribedEvents, setSubscribedEvents] = useState([])
+    const [web3, setWeb3] = useState(null)
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    const signature = signatureCanvasRef.current
-      .getTrimmedCanvas()
-      .toDataURL("image/png")
-    onSubmit(contractAddress, signature)
-  }
+    useEffect(() => {
+        const initWeb3 = async () => {
+            // Connect to Alchemy WebSocket endpoint
+            const provider = new Web3.providers.WebsocketProvider(
+                `wss://eth-sepolia.g.alchemy.com/v2/0qa4mNIYOwQeUgs1nJl3_X6sDRcuPkuE`
+            )
+            const web3Instance = new Web3(provider)
+            setWeb3(web3Instance)
+        }
+        initWeb3()
+    }, [alchemyKey])
 
-  const handleBuyProduct = async (event) => {
-    event.preventDefault()
-    await buyProduct(productId, amount)
-  }
+    const handleSubscription = async (contractAddress, eventSignature) => {
 
-  return (
-    <div>
-      <h2>Subscribe to events</h2>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Contract address:
-          <input
-            type="text"
-            value={contractAddress}
-            onChange={(event) => setContractAddress(event.target.value)}
-          />
-        </label>
-        <br />
-        <div style={{ border: "1px solid black", padding: "10px" }}>
-          <label style={{ display: "block", marginBottom: "10px" }}>
-            Event signature:
-          </label>
-          <SignatureCanvas
-            penColor="black"
-            canvasProps={{
-              width: 500,
-              height: 200,
-              className: "sigCanvas",
-              style: { border: "1px solid black" },
-            }}
-            ref={signatureCanvasRef}
-          />
+        let options = {
+            fromBlock: 0,
+            address: ["0xecd7157835da1f093b6e5fc8d5a020ae8a2b2740"], //Only get events from specific addresses
+            topics: ["0xc032f62758cac23a902e648ab54b6825665b9bc19e7cd0a8ab915cbf3eea4fa0"], //What topics to subscribe to
+        }
+
+        let subscription = web3.eth.subscribe("logs", options, (err, event) => {
+            if (!err) console.log(event)
+        })
+    }
+
+    const handleSubmit = (event) => {
+        event.preventDefault()
+        handleSubscription(contractAddress, eventSignature)
+    }
+
+    return (
+        <div>
+            <h2>Subscribe to events</h2>
+            <form onSubmit={handleSubmit}>
+                <label>
+                    Contract address:
+                    <input
+                        type="text"
+                        value={contractAddress}
+                        onChange={(event) => setContractAddress(event.target.value)}
+                    />
+                </label>
+                <br />
+                <div style={{ border: "1px solid black", padding: "10px" }}>
+                    <label style={{ display: "block", marginBottom: "10px" }}>
+                        Event signature:
+                    </label>
+                    <input
+                        type="text"
+                        value={eventSignature}
+                        onChange={(event) => setEventSignature(event.target.value)}
+                    />
+                </div>
+                <br />
+                <button type="submit">Subscribe</button>
+            </form>
+            <h2>Subscribed events</h2>
+            <ul>
+                {subscribedEvents.map((event, index) => (
+                    <li key={index}>{JSON.stringify(event)}</li>
+                ))}
+            </ul>
         </div>
-        <br />
-        <button type="submit">Subscribe</button>
-      </form>
-      <h2>Buy a product</h2>
-      <form onSubmit={handleBuyProduct}>
-        <label>
-          Product ID:
-          <input
-            type="number"
-            value={productId}
-            onChange={(event) => setProductId(event.target.value)}
-          />
-        </label>
-        <br />
-        <label>
-          Amount:
-          <input
-            type="number"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-          />
-        </label>
-        <br />
-        <button type="submit">Buy</button>
-      </form>
-    </div>
-  )
+    )
 }
 
 export default SubscriptionForm
