@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import Web3 from "web3"
+import "../src/index.css"
 import SubscriptionForm from "./components/SubscriptionForm"
 const ethers = require("ethers")
 const contractAbi = require("../src/contracts/MyContract.json").abi
@@ -97,17 +98,38 @@ function App() {
     }
 
     useEffect(() => {
-        if (marketplaceContract) {
-            // listen to the ProductBought event
-            marketplaceContract.events.ProductBought((error, event) => {
-                if (!error) {
-                    console.log(
-                        `Product ${event.returnValues.productId} bought by ${event.returnValues.buyer} for ${event.returnValues.amount} wei`
-                    )
-                    // Add the event to the subscribedEvents array
-                    setSubscribedEvents((prevEvents) => [...prevEvents, event])
-                }
-            })
+        try {
+            if (marketplaceContract) {
+                // Get all past ProductBought events and add them to subscribedEvents state
+                marketplaceContract
+                    .getPastEvents("ProductBought", {
+                        fromBlock: 0,
+                        toBlock: "latest",
+                    })
+                    .then((events) => {
+                        setSubscribedEvents(events)
+                    })
+
+                // listen to the ProductBought event
+                marketplaceContract.events.ProductBought((error, event) => {
+                    if (!error) {
+                        console.log("Event received:", event)
+                        // const eventData = web3.eth.contractAbi.decodeLog(
+                        //     event.raw.data,
+                        //     event.raw.topics.slice(1),
+                        //     subscribedEvents.find((e) => e.name === event.event)?.contractAbi?.inputs
+                        // )
+                        console.log(
+                            `Product ${event.returnValues.productId} bought by ${event.returnValues.buyer} for ${event.returnValues.pricePerProduct} wei`
+                        )
+                        // ${event.returnValues.amount}
+                        // Add the event to the subscribedEvents array
+                        setSubscribedEvents((prevEvents) => [...prevEvents, event])
+                    }
+                })
+            }
+        } catch (error) {
+            console.log
         }
     }, [marketplaceContract])
 
@@ -116,15 +138,35 @@ function App() {
             {/* <NavigationBar /> */}
             <h1>Marketplace Event Subscriber</h1>
             <SubscriptionForm onSubmit={handleSubscription} buyProduct={buyProduct} />
-            {subscribedEvents.map((event) => (
-                <div key={event.transactionHash}>
-                    <h2>New event:</h2>
-                    <p>Transaction hash: {event.transactionHash}</p>
-                    <p>Buyer address: {event.topics[1]}</p>
-                    <p>Product ID: {web3.utils.hexToNumber(event.topics[2])}</p>
-                    <p>Amount: {web3.utils.hexToNumber(event.data)}</p>
-                </div>
-            ))}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Transaction Hash</th>
+                        <th>Contract Address</th>
+                        <th>Event Signature</th>
+                        <th>Buyer</th>
+
+                        <th>Product ID</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {subscribedEvents.map((event, index) => (
+                        <tr key={index}>
+                            <td>{index}</td>
+                            <td>{event.transactionHash}</td>
+                            <td>{event.address}</td>
+                            <td>{event.signature}</td>
+                            <td>{event.returnValues.buyer}</td>
+
+                            <td>{event.returnValues.productId}</td>
+                            <td>{event.returnValues.price}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     )
 }
