@@ -52,6 +52,32 @@ function App() {
         connectToWeb3()
     }, [])
 
+    const handleConnect = async () => {
+        if (!window.ethereum) {
+            alert("MetaMask not detected!")
+            return
+        }
+
+        try {
+            // Request account access
+            await window.ethereum.enable()
+            const web3Instance = new Web3(window.ethereum)
+            setWeb3(web3Instance)
+
+            // Load the marketplace contract
+            const contractInstance = new web3Instance.eth.Contract(contractAbi, contractAddress)
+            setMarketplaceContract(contractInstance)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const handleDisconnect = () => {
+        setWeb3(null)
+        setMarketplaceContract(null)
+        setSubscribedEvents([])
+    }
+
     const handleSubscription = async (contractAddress, eventSignature) => {
         // Subscribe to the specified event on the marketplace contract
         const subscription = web3.eth.subscribe(
@@ -63,7 +89,12 @@ function App() {
             (error, result) => {
                 console.log("Event signature:", eventSignature)
                 if (!error) {
-                    // Add the event to the subscribedEvents array
+                    // Extract the transaction hash from the result
+                    const { transactionHash, ...eventData } = result
+
+                    // Create a new object with both the event data and transaction hash
+                    const eventWithTxHash = { transactionHash, ...eventData }
+                    setSubscribedEvents((prevEvents) => [...prevEvents, eventWithTxHash])
                     console.log("Received event:", result)
                     setSubscribedEvents((prevEvents) => [...prevEvents, result])
                 } else {
@@ -135,8 +166,14 @@ function App() {
 
     return (
         <div className="App">
+            <header className="App-header">
+                {web3 ? (
+                    <button onClick={handleDisconnect}>Disconnect</button>
+                ) : (
+                    <button onClick={handleConnect}>Connect</button>
+                )}
+            </header>
             {/* <NavigationBar /> */}
-            <h1>Marketplace Event Subscriber</h1>
             <SubscriptionForm onSubmit={handleSubscription} buyProduct={buyProduct} />
 
             <table>
@@ -144,10 +181,10 @@ function App() {
                     <tr>
                         <th>Event ID</th>
                         <th>Transaction Hash</th>
+                        <th>Transaction From</th>
                         <th>Contract Address</th>
                         <th>Event Signature</th>
                         <th>Buyer</th>
-
                         <th>Product ID</th>
                         <th>Amount</th>
                     </tr>
@@ -160,7 +197,6 @@ function App() {
                             <td>{event.address}</td>
                             <td>{event.signature}</td>
                             <td>{event.returnValues.buyer}</td>
-
                             <td>{event.returnValues.productId}</td>
                             <td>{event.returnValues.price}</td>
                         </tr>

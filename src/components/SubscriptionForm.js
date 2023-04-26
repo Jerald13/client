@@ -1,6 +1,60 @@
 import React, { useState, useEffect } from "react"
 import Web3 from "web3"
 import { ethers } from "ethers"
+
+const styles = {
+    container: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        fontFamily: "Arial, sans-serif",
+    },
+    heading: {
+        fontSize: "28px",
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: "20px",
+        fontFamily: "Montserrat, sans-serif",
+    },
+    eventList: {
+        listStyleType: "none",
+        padding: "0",
+        margin: "0",
+        textAlign: "center",
+    },
+    buyForm: {
+        border: "1px solid #ccc",
+        padding: "20px",
+        borderRadius: "5px",
+        maxWidth: "400px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+    },
+    label: {
+        marginBottom: "10px",
+        textAlign: "left",
+    },
+    input: {
+        marginLeft: "10px",
+        padding: "10px",
+        border: "none",
+        borderRadius: "5px",
+        boxShadow: "0 0 2px 1px #ccc",
+        fontFamily: "Arial, sans-serif",
+    },
+    button: {
+        backgroundColor: "#4CAF50",
+        color: "white",
+        padding: "10px",
+        borderRadius: "5px",
+        border: "none",
+        cursor: "pointer",
+        marginTop: "10px",
+        fontFamily: "Arial, sans-serif",
+    },
+}
+
 const contractAbi = require("../../src/contracts/MyContract.json").abi
 const { MyContract: contractAddress } = require("../../src/contracts/contract-address.json")
 function SubscriptionForm({ alchemyKey }) {
@@ -71,59 +125,39 @@ function SubscriptionForm({ alchemyKey }) {
     }
 
     return (
-        <div>
-            <h2>Subscribe to events</h2>
-            <form onSubmit={handleSubmit}>
-                <label>
-                    Contract address:
-                    <input
-                        type="text"
-                        value={contractAddressInput}
-                        onChange={(event) => setContractAddress(event.target.value)}
-                    />
-                </label>
-                <br />
-                <div style={{ border: "1px solid black", padding: "10px" }}>
-                    <label style={{ display: "block", marginBottom: "10px" }}>
-                        Event signature:
-                    </label>
-                    <input
-                        type="text"
-                        value={eventSignatureInput}
-                        onChange={(event) => setEventSignature(event.target.value)}
-                    />
-                </div>
-                <br />
-                <button type="submit">Subscribe</button>
-            </form>
-            <h2>Subscribed events</h2>
-            <ul>
+        <div style={styles.container}>
+            <h1 style={styles.heading}>Subscribed events</h1>
+            <ul style={styles.eventList}>
                 {subscribedEvents.map((event, index) => (
                     <li key={index}>{JSON.stringify(event)}</li>
                 ))}
             </ul>
 
-            <h2>Buy a product</h2>
-            <form onSubmit={handleBuyProductFormSubmit}>
-                <label>
-                    Product ID:
+            <h2 style={styles.heading}>Buy a product</h2>
+            <form onSubmit={handleBuyProductFormSubmit} style={styles.buyForm}>
+                <div style={styles.label}>
+                    <label htmlFor="productId">Product ID:</label>
                     <input
                         type="number"
+                        id="productId"
                         value={productId}
                         onChange={(event) => setProductId(event.target.value)}
+                        style={styles.input}
                     />
-                </label>
-                <br />
-                <label>
-                    Amount:
+                </div>
+                <div style={styles.label}>
+                    <label htmlFor="amount">Amount:</label>
                     <input
                         type="number"
+                        id="amount"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
+                        style={styles.input}
                     />
-                </label>
-                <br />
-                <button type="submit">Buy</button>
+                </div>
+                <button type="submit" style={styles.button}>
+                    Buy
+                </button>
             </form>
         </div>
     )
